@@ -13,10 +13,11 @@ import org.springframework.test.context.support.TestPropertySourceUtils;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(initializers = CustomerTest.DockerPostgreDataSourceInitializer.class)
 @SpringBootTest
 public class CustomerTest {
 
@@ -28,22 +29,11 @@ public class CustomerTest {
         .withPassword("dbpass")
         .withUsername("postgres");
 
-    static {
-        postgreSQLContainer.start();
-    }
-
-    public static class DockerPostgreDataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-        
-        @Override
-        public void initialize(ConfigurableApplicationContext applicationContext) {
-            
-            TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
-                    applicationContext,
-                    "spring.datasource.url=" + postgreSQLContainer.getJdbcUrl(),
-                    "spring.datasource.username=" + postgreSQLContainer.getUsername(),
-                    "spring.datasource.password=" + postgreSQLContainer.getPassword()
-            );
-        }
+    @DynamicPropertySource
+    static void setProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", () -> postgreSQLContainer.getJdbcUrl());
+        registry.add("spring.datasource.username", () -> postgreSQLContainer.getUsername());
+        registry.add("spring.datasource.password", () -> postgreSQLContainer.getPassword());
     }
 
     @Test
